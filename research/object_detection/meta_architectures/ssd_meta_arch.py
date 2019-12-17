@@ -31,7 +31,6 @@ from object_detection.core import target_assigner
 from object_detection.utils import ops
 from object_detection.utils import shape_utils
 from object_detection.utils import variables_helper
-from object_detection.utils import visualization_utils
 
 slim = contrib_slim
 
