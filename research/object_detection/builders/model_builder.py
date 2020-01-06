@@ -153,12 +153,8 @@ def _build_ssd_feature_extractor(feature_extractor_config,
   use_explicit_padding = feature_extractor_config.use_explicit_padding
   use_depthwise = feature_extractor_config.use_depthwise
 
-  if is_keras_extractor:
-    conv_hyperparams = hyperparams_builder.KerasLayerHyperparams(
-        feature_extractor_config.conv_hyperparams)
-  else:
-    conv_hyperparams = hyperparams_builder.build(
-        feature_extractor_config.conv_hyperparams, is_training)
+  conv_hyperparams = hyperparams_builder.build(
+      feature_extractor_config.conv_hyperparams, is_training)
   override_base_feature_extractor_hyperparams = (
       feature_extractor_config.override_base_feature_extractor_hyperparams)
 
@@ -166,11 +162,7 @@ def _build_ssd_feature_extractor(feature_extractor_config,
       not is_keras_extractor):
     raise ValueError('Unknown ssd feature_extractor: {}'.format(feature_type))
 
-  if is_keras_extractor:
-    feature_extractor_class = SSD_KERAS_FEATURE_EXTRACTOR_CLASS_MAP[
-        feature_type]
-  else:
-    feature_extractor_class = SSD_FEATURE_EXTRACTOR_CLASS_MAP[feature_type]
+  feature_extractor_class = SSD_FEATURE_EXTRACTOR_CLASS_MAP[feature_type]
   kwargs = {
       'is_training':
           is_training,
@@ -197,17 +189,10 @@ def _build_ssd_feature_extractor(feature_extractor_config,
   if feature_extractor_config.HasField('num_layers'):
     kwargs.update({'num_layers': feature_extractor_config.num_layers})
 
-  if is_keras_extractor:
-    kwargs.update({
-        'conv_hyperparams': conv_hyperparams,
-        'inplace_batchnorm_update': False,
-        'freeze_batchnorm': freeze_batchnorm
-    })
-  else:
-    kwargs.update({
-        'conv_hyperparams_fn': conv_hyperparams,
-        'reuse_weights': reuse_weights,
-    })
+  kwargs.update({
+      'conv_hyperparams_fn': conv_hyperparams,
+      'reuse_weights': reuse_weights,
+  })
 
   if feature_extractor_config.HasField('fpn'):
     kwargs.update({
@@ -254,21 +239,9 @@ def _build_ssd_model(ssd_config, is_training, add_summaries):
   negative_class_weight = ssd_config.negative_class_weight
   anchor_generator = anchor_generator_builder.build(
       ssd_config.anchor_generator)
-  if feature_extractor.is_keras_model:
-    ssd_box_predictor = box_predictor_builder.build_keras(
-        hyperparams_fn=hyperparams_builder.KerasLayerHyperparams,
-        freeze_batchnorm=ssd_config.freeze_batchnorm,
-        inplace_batchnorm_update=False,
-        num_predictions_per_location_list=anchor_generator
-        .num_anchors_per_location(),
-        box_predictor_config=ssd_config.box_predictor,
-        is_training=is_training,
-        num_classes=num_classes,
-        add_background_class=ssd_config.add_background_class)
-  else:
-    ssd_box_predictor = box_predictor_builder.build(
-        hyperparams_builder.build, ssd_config.box_predictor, is_training,
-        num_classes, ssd_config.add_background_class)
+  ssd_box_predictor = box_predictor_builder.build(
+      hyperparams_builder.build, ssd_config.box_predictor, is_training,
+      num_classes, ssd_config.add_background_class)
   image_resizer_fn = image_resizer_builder.build(ssd_config.image_resizer)
   non_max_suppression_fn, score_conversion_fn = post_processing_builder.build(
       ssd_config.post_processing)
