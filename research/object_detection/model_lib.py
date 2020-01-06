@@ -480,20 +480,7 @@ def create_estimator_and_inputs(run_config,
                   use_tpu, export_to_tpu)
   model_fn = model_fn_creator(detection_model_fn, configs, hparams, use_tpu,
                               postprocess_on_cpu)
-  if use_tpu_estimator:
-    # estimator = tf.contrib.tpu.TPUEstimator(
-    #     model_fn=model_fn,
-    #     train_batch_size=train_config.batch_size,
-    #     # For each core, only batch size 1 is supported for eval.
-    #     eval_batch_size=num_shards * 1 if use_tpu else 1,
-    #     use_tpu=use_tpu,
-    #     config=run_config,
-    #     export_to_tpu=export_to_tpu,
-    #     eval_on_tpu=False,  # Eval runs on CPU, so disable eval on TPU
-    #     params=params if params else {})
-    pass
-  else:
-    estimator = tf.estimator.Estimator(model_fn=model_fn, config=run_config)
+  estimator = tf.estimator.Estimator(model_fn=model_fn, config=run_config)
 
   # Write the as-run pipeline config to disk.
   if run_config.is_chief and save_final_config:
@@ -568,41 +555,3 @@ def create_train_and_eval_specs(train_input_fn,
             name='eval_on_train', input_fn=eval_on_train_input_fn, steps=None))
 
   return train_spec, eval_specs
-
-
-# def continuous_eval(estimator, model_dir, input_fn, train_steps, name):
-#   """Perform continuous evaluation on checkpoints written to a model directory.
-
-#   Args:
-#     estimator: Estimator object to use for evaluation.
-#     model_dir: Model directory to read checkpoints for continuous evaluation.
-#     input_fn: Input function to use for evaluation.
-#     train_steps: Number of training steps. This is used to infer the last
-#       checkpoint and stop evaluation loop.
-#     name: Namescope for eval summary.
-#   """
-
-#   def terminate_eval():
-#     tf.logging.info('Terminating eval after 180 seconds of no checkpoints')
-#     return True
-
-#   for ckpt in tf.contrib.training.checkpoints_iterator(
-#       model_dir, min_interval_secs=180, timeout=None,
-#       timeout_fn=terminate_eval):
-
-#     tf.logging.info('Starting Evaluation.')
-#     try:
-#       eval_results = estimator.evaluate(
-#           input_fn=input_fn, steps=None, checkpoint_path=ckpt, name=name)
-#       tf.logging.info('Eval results: %s' % eval_results)
-
-#       # Terminate eval job when final checkpoint is reached
-#       current_step = int(os.path.basename(ckpt).split('-')[1])
-#       if current_step >= train_steps:
-#         tf.logging.info(
-#             'Evaluation finished after training step %d' % current_step)
-#         break
-
-#     except tf.errors.NotFoundError:
-#       tf.logging.info(
-#           'Checkpoint %s no longer exists, skipping checkpoint' % ckpt)
