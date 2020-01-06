@@ -106,3 +106,6 @@ samples/outreach/blogs/segmentation_blogpost/carvana-image-masking-challenge/
 research/annotations
 research/model_out
 research/ssd_model
+research/object_detection/protos
+research/pet*
+research/images
