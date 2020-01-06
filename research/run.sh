@@ -1,3 +1,5 @@
+rm -drf model_out
+export PYTHONPATH=$PYTHONPATH:`pwd`:`pwd`/slim
 PIPELINE_CONFIG_PATH=/home/eric/models/research/ssd_mobilenet_v1_pets.config
 MODEL_DIR=/home/eric/models/research/model_out
 NUM_TRAIN_STEPS=1
