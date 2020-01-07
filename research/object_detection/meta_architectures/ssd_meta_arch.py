@@ -586,17 +586,14 @@ class SSDMetaArch(model.DetectionModel):
       batchnorm_updates_collections = None
     else:
       batchnorm_updates_collections = tf.GraphKeys.UPDATE_OPS
-    if self._feature_extractor.is_keras_model:
-      feature_maps = self._feature_extractor(preprocessed_inputs)
-    else:
-      with slim.arg_scope([slim.batch_norm],
-                          is_training=(self._is_training and
-                                       not self._freeze_batchnorm),
-                          updates_collections=batchnorm_updates_collections):
-        with tf.variable_scope(None, self._extract_features_scope,
-                               [preprocessed_inputs]):
-          feature_maps = self._feature_extractor.extract_features(
-              preprocessed_inputs)
+    with slim.arg_scope([slim.batch_norm],
+                        is_training=(self._is_training and
+                                      not self._freeze_batchnorm),
+                        updates_collections=batchnorm_updates_collections):
+      with tf.variable_scope(None, self._extract_features_scope,
+                              [preprocessed_inputs]):
+        feature_maps = self._feature_extractor.extract_features(
+            preprocessed_inputs)
 
     feature_map_spatial_dims = self._get_feature_map_spatial_dims(
         feature_maps)
@@ -607,15 +604,12 @@ class SSDMetaArch(model.DetectionModel):
         im_height=image_shape[1],
         im_width=image_shape[2])
     self._anchors = box_list_ops.concatenate(boxlist_list)
-    if self._box_predictor.is_keras_model:
-      predictor_results_dict = self._box_predictor(feature_maps)
-    else:
-      with slim.arg_scope([slim.batch_norm],
-                          is_training=(self._is_training and
-                                       not self._freeze_batchnorm),
-                          updates_collections=batchnorm_updates_collections):
-        predictor_results_dict = self._box_predictor.predict(
-            feature_maps, self._anchor_generator.num_anchors_per_location())
+    with slim.arg_scope([slim.batch_norm],
+                        is_training=(self._is_training and
+                                    not self._freeze_batchnorm),
+                        updates_collections=batchnorm_updates_collections):
+      predictor_results_dict = self._box_predictor.predict(
+          feature_maps, self._anchor_generator.num_anchors_per_location())
     predictions_dict = {
         'preprocessed_inputs':
             preprocessed_inputs,
