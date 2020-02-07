@@ -250,9 +250,6 @@ def create_model_fn(detection_model_fn, configs, hparams, use_tpu=False,
       losses = [loss_tensor for loss_tensor in losses_dict.values()]
       if train_config.add_regularization_loss:
         regularization_losses = detection_model.regularization_losses()
-        if use_tpu and train_config.use_bfloat16:
-          regularization_losses = ops.bfloat16_to_float32_nested(
-              regularization_losses)
         if regularization_losses:
           regularization_loss = tf.add_n(
               regularization_losses, name='regularization_loss')
@@ -261,15 +258,10 @@ def create_model_fn(detection_model_fn, configs, hparams, use_tpu=False,
       total_loss = tf.add_n(losses, name='total_loss')
       losses_dict['Loss/total_loss'] = total_loss
 
-      if 'graph_rewriter_config' in configs:
-        graph_rewriter_fn = graph_rewriter_builder.build(
-            configs['graph_rewriter_config'], is_training=is_training)
-        graph_rewriter_fn()
-
       # TODO(rathodv): Stop creating optimizer summary vars in EVAL mode once we
       # can write learning rate summaries on TPU without host calls.
       global_step = tf.train.get_or_create_global_step()
-      training_optimizer, optimizer_summary_vars = optimizer_builder.build(
+      training_optimizer, _ = optimizer_builder.build(
           train_config.optimizer)
 
       # Optionally freeze some layers by setting their gradients to be zero.
@@ -289,12 +281,6 @@ def create_model_fn(detection_model_fn, configs, hparams, use_tpu=False,
       if train_config.gradient_clipping_by_norm > 0:
         clip_gradients_value = train_config.gradient_clipping_by_norm
 
-      if not use_tpu:
-        for var in optimizer_summary_vars:
-          tf.summary.scalar(var.op.name, var)
-      summaries = [] if use_tpu else None
-      if train_config.summarize_gradients:
-        summaries = ['gradients', 'gradient_norm', 'global_gradient_norm']
       train_op = tf.contrib.layers.optimize_loss(
           loss=total_loss,
           global_step=global_step,
@@ -303,7 +289,6 @@ def create_model_fn(detection_model_fn, configs, hparams, use_tpu=False,
           optimizer=training_optimizer,
           update_ops=detection_model.updates(),
           variables=trainable_variables,
-          summaries=summaries,
           name='')  # Preventing scope prefix on all variables.
 
     eval_metric_ops = None
