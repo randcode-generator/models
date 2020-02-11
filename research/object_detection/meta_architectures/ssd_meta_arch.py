@@ -913,54 +913,9 @@ class SSDMetaArch(model.DetectionModel):
           weights=batch_cls_weights,
           losses_mask=losses_mask)
 
-      if self._expected_loss_weights_fn:
-        # Need to compute losses for assigned targets against the
-        # unmatched_class_label as well as their assigned targets.
-        # simplest thing (but wasteful) is just to calculate all losses
-        # twice
-        batch_size, num_anchors, num_classes = batch_cls_targets.get_shape()
-        unmatched_targets = tf.ones([batch_size, num_anchors, 1
-                                    ]) * self._unmatched_class_label
-
-        unmatched_cls_losses = self._classification_loss(
-            prediction_dict['class_predictions_with_background'],
-            unmatched_targets,
-            weights=batch_cls_weights,
-            losses_mask=losses_mask)
-
-        if cls_losses.get_shape().ndims == 3:
-          batch_size, num_anchors, num_classes = cls_losses.get_shape()
-          cls_losses = tf.reshape(cls_losses, [batch_size, -1])
-          unmatched_cls_losses = tf.reshape(unmatched_cls_losses,
-                                            [batch_size, -1])
-          batch_cls_targets = tf.reshape(
-              batch_cls_targets, [batch_size, num_anchors * num_classes, -1])
-          batch_cls_targets = tf.concat(
-              [1 - batch_cls_targets, batch_cls_targets], axis=-1)
-
-          location_losses = tf.tile(location_losses, [1, num_classes])
-
-        foreground_weights, background_weights = (
-            self._expected_loss_weights_fn(batch_cls_targets))
-
-        cls_losses = (
-            foreground_weights * cls_losses +
-            background_weights * unmatched_cls_losses)
-
-        location_losses *= foreground_weights
-
-        classification_loss = tf.reduce_sum(cls_losses)
-        localization_loss = tf.reduce_sum(location_losses)
-      elif self._hard_example_miner:
-        cls_losses = ops.reduce_sum_trailing_dimensions(cls_losses, ndims=2)
-        (localization_loss, classification_loss) = self._apply_hard_mining(
-            location_losses, cls_losses, prediction_dict, match_list)
-        if self._add_summaries:
-          self._hard_example_miner.summarize()
-      else:
-        cls_losses = ops.reduce_sum_trailing_dimensions(cls_losses, ndims=2)
-        localization_loss = tf.reduce_sum(location_losses)
-        classification_loss = tf.reduce_sum(cls_losses)
+      cls_losses = ops.reduce_sum_trailing_dimensions(cls_losses, ndims=2)
+      localization_loss = tf.reduce_sum(location_losses)
+      classification_loss = tf.reduce_sum(cls_losses)
 
       # Optionally normalize by number of positive matches
       normalizer = tf.constant(1.0, dtype=tf.float32)
