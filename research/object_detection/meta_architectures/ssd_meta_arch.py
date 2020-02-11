@@ -925,8 +925,6 @@ class SSDMetaArch(model.DetectionModel):
                                 1.0)
 
       localization_loss_normalizer = normalizer
-      if self._normalize_loc_loss_by_codesize:
-        localization_loss_normalizer *= self._box_coder.code_size
       localization_loss = tf.multiply((self._localization_loss_weight /
                                        localization_loss_normalizer),
                                       localization_loss,
