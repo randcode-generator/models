@@ -238,11 +238,6 @@ class WeightedSigmoidClassificationLoss(Loss):
       loss: a float tensor of shape [batch_size, num_anchors, num_classes]
         representing the value of the loss function.
     """
-    if class_indices is not None:
-      weights *= tf.reshape(
-          ops.indices_to_dense_vector(class_indices,
-                                      tf.shape(prediction_tensor)[2]),
-          [1, 1, -1])
     per_entry_cross_ent = (tf.nn.sigmoid_cross_entropy_with_logits(
         labels=target_tensor, logits=prediction_tensor))
     return per_entry_cross_ent * weights
